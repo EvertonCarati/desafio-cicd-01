@@ -23,5 +23,24 @@ jobs:
       - name: Execução do comando build
         working-directory: ./src
         run: dotnet build Review-Filmes.sln
+  release:
+    name: Criação de Rrlease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtendo o código do projeto
+        uses: actions/heckout@v4
+      - name: efetuando o Çogin no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
+      - name: Build e Push da Imagem DOcker
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ./src
+          file: ./src/Review-Filmes.Web/Dockerfile
+          tags: |
+            evertoncarati/projeto-devopspro:latest
+            evertoncarati/projeto-devops-pro:v${{ github.run.number }}
           
-    
