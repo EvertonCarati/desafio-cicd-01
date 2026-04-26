@@ -24,8 +24,9 @@ jobs:
         working-directory: ./src
         run: dotnet build Review-Filmes.sln
   release:
-    name: Criação de Rrlease
+    name: Criação de Release
     runs-on: ubuntu-latest
+    nedds: [build]
     steps:
       - name: Obtendo o código do projeto
         uses: actions/heckout@v4
