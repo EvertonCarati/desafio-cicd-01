@@ -23,19 +23,22 @@ jobs:
       - name: Execução do comando build
         working-directory: ./src
         run: dotnet build Review-Filmes.sln
+
   release:
     name: Criação de Release
     runs-on: ubuntu-latest
-    nedds: [build]
+    needs: [build]
     steps:
       - name: Obtendo o código do projeto
-        uses: actions/heckout@v4
-      - name: efetuando o Çogin no Docker Hub
+        uses: actions/checkout@v4
+
+      - name: Efetuando o Login no Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PWD }}
-      - name: Build e Push da Imagem DOcker
+
+      - name: Build e Push da Imagem Docker
         uses: docker/build-push-action@v6
         with:
           push: true
@@ -43,5 +46,4 @@ jobs:
           file: ./src/Review-Filmes.Web/Dockerfile
           tags: |
             evertoncarati/projeto-devopspro:latest
-            evertoncarati/projeto-devops-pro:v${{ github.run.number }}
-          
+            evertoncarati/projeto-devopspro:v${{ github.run_number }}
