@@ -1,7 +1,6 @@
 name: Execução de Teste
 on:
   workflow_call:
-
 jobs: 
   unit-teste:
     name: Teste de Unidade
@@ -26,9 +25,9 @@ jobs:
         ports:
           - 5432:5432
         env: 
-            POSTGRES_USER: review
-            POSTGRES_PASSWORD: postgrespwd
-            POSTGRES_DB: review-filmes
+          POSTGRES_USER: review
+          POSTGRES_PASSWORD: postgrespwd
+          POSTGRES_DB: review-filmes
     steps:
       - name: Obtendo o código do projeto
         uses: actions/checkout@v4
@@ -41,4 +40,3 @@ jobs:
         run: dotnet test ./Review-Filmes.Test.Integration/Review-Filmes.Test.Integration.csproj
         env:
           ConnectionStrings_DefaultConnection: "Host=localhost;Port=5432;Database=review-filmes;Username=review;Password=postgrespwd"
-          
