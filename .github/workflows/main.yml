@@ -1,12 +1,10 @@
 name: Pipeline CI/CD
 run-name: Pipeline CI/CD executada por ${{ github.actor }} em ${{ github.run_number }}
-
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-
 jobs:
   build:
     name: Build
@@ -14,20 +12,17 @@ jobs:
     steps:
       - name: Obtendo o código do projeto
         uses: actions/checkout@v4
-
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.300"
-
       - name: Execução do comando build
         working-directory: ./src
         run: dotnet build Review-Filmes.sln
+
   testes:
     needs: [build]
     uses: evertoncarati/desafio-cicd-01/.github/workflows/testes.yml@main
-    
-    
 
   release:
     name: Criação de Release
@@ -36,13 +31,11 @@ jobs:
     steps:
       - name: Obtendo o código do projeto
         uses: actions/checkout@v4
-
       - name: Efetuando o Login no Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PWD }}
-
       - name: Build e Push da Imagem Docker
         uses: docker/build-push-action@v6
         with:
@@ -52,15 +45,16 @@ jobs:
           tags: |
             evertoncarati/projeto-devopspro:latest
             evertoncarati/projeto-devopspro:v${{ github.run_number }}
-sonarqube:
-  name: Scan com o sonarqube
-  runs-on: ubuntu-latest
-  steps:
+
+  sonarqube:
+    name: Scan com o sonarqube
+    runs-on: ubuntu-latest
+    steps:
       - name: Obtendo o código do projeto
         uses: actions/checkout@v4
       - name: Setup JDK
         uses: actions/setup-java@v4
-        with: 
+        with:
           java-version: '21'
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -68,12 +62,9 @@ sonarqube:
           dotnet-version: "8.0.300"
       - name: Instalação do Sonarqube Scanner
         run: dotnet tool install --global dotnet-sonarscanner
-      - name: Build e analise
+      - name: Build e análise
         working-directory: ./src
         run: |
-          dotnet sonarscanner begin \ /o:"evertoncarati" \ /k:"filme" \ /d:sonar.token="59727f449b128508a45c19cb9d04c22db8380a72"
+          dotnet sonarscanner begin /o:"evertoncarati" /k:"filme" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
           dotnet build Review-Filmes.sln
-          dotnet sonarscanner end /d:sonar.token="59727f449b128508a45c19cb9d04c22db8380a72"
-        
-          
-          
+          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
