@@ -1,68 +1,70 @@
-integration-test:
-  name: Teste de Integração + SonarQube
-  runs-on: ubuntu-latest
-  services:
-    postgre:
-      image: postgres:latest
-      ports:
-        - 5432:5432
-      env:
-        POSTGRES_USER: review
-        POSTGRES_PASSWORD: postgrespwd
-        POSTGRES_DB: review-filmes
-      options: >-
-        --health-cmd pg_isready
-        --health-interval 10s
-        --health-timeout 5s
-        --health-retries 5
-  steps:
-    - name: Obtendo o código do projeto
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0          # obrigatório pro Sonar analisar histórico
+name: Pipeline CI/CD
+run-name: Pipeline CI/CD executada por ${{ github.actor }} em ${{ github.run_number }}
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtendo o código do projeto
+        uses: actions/checkout@v4
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.300"
+      - name: Execução do comando build
+        working-directory: ./src
+        run: dotnet build Review-Filmes.sln
 
-    - name: Setup JDK
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
+  testes:
+    needs: [build]
+    uses: evertoncarati/desafio-cicd-01/.github/workflows/testes.yml@main
 
-    - name: Setup dotnet
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: "8.0.300"
+  release:
+    name: Criação de Release
+    runs-on: ubuntu-latest
+    needs: [testes]
+    steps:
+      - name: Obtendo o código do projeto
+        uses: actions/checkout@v4
+      - name: Efetuando o Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
+      - name: Build e Push da Imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ./src
+          file: ./src/Review-Filmes.Web/Dockerfile
+          tags: |
+            evertoncarati/projeto-devopspro:latest
+            evertoncarati/projeto-devopspro:v${{ github.run_number }}
 
-    - name: Instalação do Sonarqube Scanner
-      run: dotnet tool install --global dotnet-sonarscanner
-
-    - name: Sonar Begin
-      working-directory: ./src
-      run: |
-        dotnet sonarscanner begin \
-          /o:"evertoncarati" \
-          /k:"filme" \
-          /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-          /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
-
-    - name: Build
-      working-directory: ./src
-      run: dotnet build Review-Filmes.sln
-
-    - name: Teste de Unidade
-      working-directory: ./src
-      run: |
-        dotnet test ./Review-Filmes.Test.Unit/Review-Filmes.Test.Unit.csproj \
-          --collect:"XPlat Code Coverage" \
-          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-
-    - name: Teste de Integração
-      working-directory: ./src
-      run: |
-        dotnet test ./Review-Filmes.Test.Integration/Review-Filmes.Test.Integration.csproj \
-          --collect:"XPlat Code Coverage" \
-          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-      env:
-        ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=review-filmes;Username=review;Password=postgrespwd"
-
-    - name: Sonar End
-      working-directory: ./src
-      run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+  sonarqube:
+    name: Scan com o sonarqube
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtendo o código do projeto
+        uses: actions/checkout@v4
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.300"
+      - name: Instalação do Sonarqube Scanner
+        run: dotnet tool install --global dotnet-sonarscanner
+      - name: Build e análise
+        working-directory: ./src
+        run: |
+          dotnet sonarscanner begin /o:"evertoncarati" /k:"filme" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet build Review-Filmes.sln
+          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
