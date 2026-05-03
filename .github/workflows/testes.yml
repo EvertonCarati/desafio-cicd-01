@@ -68,7 +68,7 @@ jobs:
       - name: Build e análise
         working-directory: ./src
         run: |
-          dotnet sonarscanner begin /o:"evertoncarati" /k:"filme" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          dotnet sonarscanner begin /o:"evertoncarati" /k:"filme" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" / d:sonar.branch.name="master"
           dotnet build Review-Filmes.sln
           dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
       - name: Debug report-task
