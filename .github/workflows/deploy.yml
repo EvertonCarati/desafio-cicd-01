@@ -22,3 +22,4 @@ jobs:
             k8s/deployment.yaml
           images: |
             evertoncarati/projeto-devopspro:v${{ github.run_number }}
+
